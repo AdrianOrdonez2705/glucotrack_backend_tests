@@ -10,7 +10,8 @@ const auditoriaEndpoint = (rolDefecto = null) => {
         called = true;
 
         try {
-          let id_usuario = req.params?.id_usuario || req.body?.id_usuario || req.query?.id_usuario || null;
+          let id_usuario =
+            req.params?.id_usuario || req.body?.id_usuario || req.query?.id_usuario || null;
           let id_rol = req.params?.id_rol || req.body?.id_rol || req.query?.id_rol || null;
           let rol = rolDefecto || null;
 
@@ -20,8 +21,8 @@ const auditoriaEndpoint = (rolDefecto = null) => {
             if (responseBody?.id_usuario) {
               id_usuario = responseBody.id_usuario;
             }
-            if(responseBody?.id_rol){
-                id_rol=responseBody.id_rol
+            if (responseBody?.id_rol) {
+              id_rol = responseBody.id_rol;
             }
           } catch (err) {
             // no es JSON válido, ignorar
@@ -38,16 +39,18 @@ const auditoriaEndpoint = (rolDefecto = null) => {
           }
 
           // Insertar auditoría
-          await supabase.from('auditoria_endpoints').insert([{
-            id_usuario,
-            rol:"login",
-            id_rol,
-            endpoint: req.originalUrl,
-            operacion: req.method,
-            exito: res.statusCode < 400,
-            codigo_http: res.statusCode,
-            ip_origen: req.ip
-          }]);
+          await supabase.from('auditoria_endpoints').insert([
+            {
+              id_usuario,
+              rol: 'login',
+              id_rol,
+              endpoint: req.originalUrl,
+              operacion: req.method,
+              exito: res.statusCode < 400,
+              codigo_http: res.statusCode,
+              ip_origen: req.ip,
+            },
+          ]);
         } catch (err) {
           console.error('Error auditoría endpoint:', err?.message || err);
         }

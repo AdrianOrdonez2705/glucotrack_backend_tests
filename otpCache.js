@@ -10,7 +10,6 @@ const getOTP = (id_usuario) => {
   const data = otpMap.get(id_usuario);
   if (!data) return null;
 
-  // Verificar expiración
   if (Date.now() > data.expiracion) {
     otpMap.delete(id_usuario);
     return null;

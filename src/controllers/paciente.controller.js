@@ -1,10 +1,10 @@
-const supabase = require('../../database'); // tu cliente Supabase
-const bcrypt=require('bcrypt')
+const supabase = require('../../database');
+const bcrypt = require('bcrypt');
 
 const registrarPaciente = async (req, res) => {
   try {
-    console.log("FILES LLEGAN:", req.files);
-    console.log("BODY LLEGA:", req.body);
+    console.log('FILES LLEGAN:', req.files);
+    console.log('BODY LLEGA:', req.body);
 
     const {
       nombre_completo,
@@ -23,28 +23,45 @@ const registrarPaciente = async (req, res) => {
       nombre_emergencia,
       numero_emergencia,
       embarazada,
-      semanas
+      semanas,
     } = req.body;
 
-    const teléfono = req.body["teléfono"] || req.body["telÃ©fono"];
+    const teléfono = req.body['teléfono'] || req.body['telÃ©fono'];
     const imgFiles = req.files?.foto_perfil;
 
     if (!imgFiles || imgFiles.length === 0) {
-      return res.status(400).json({ error: "Archivo de perfil faltante" });
+      return res.status(400).json({ error: 'Archivo de perfil faltante' });
     }
 
     const img = imgFiles[0];
     const imgUpload = await supabase.storage
-      .from("perfiles_pacientes")
+      .from('perfiles_pacientes')
       .upload(`imgs/${Date.now()}_${img.originalname}`, img.buffer, { contentType: img.mimetype });
 
     if (imgUpload.error) throw imgUpload.error;
-    const imgUrl = supabase.storage.from("perfiles_pacientes").getPublicUrl(imgUpload.data.path).data.publicUrl;
+    const imgUrl = supabase.storage.from('perfiles_pacientes').getPublicUrl(imgUpload.data.path)
+      .data.publicUrl;
 
     // Validación de campos obligatorios
-    if (!nombre_completo || !correo || !contrasena || !rol || !fecha_nac || !teléfono || !id_medico
-        || !id_actividad || !genero || !peso || !altura || !enfermedad_id || !tratamiento_id
-        || !dosis_ || !nombre_emergencia || !numero_emergencia || !imgUrl) {
+    if (
+      !nombre_completo ||
+      !correo ||
+      !contrasena ||
+      !rol ||
+      !fecha_nac ||
+      !teléfono ||
+      !id_medico ||
+      !id_actividad ||
+      !genero ||
+      !peso ||
+      !altura ||
+      !enfermedad_id ||
+      !tratamiento_id ||
+      !dosis_ ||
+      !nombre_emergencia ||
+      !numero_emergencia ||
+      !imgUrl
+    ) {
       return res.status(400).json({ error: 'Todos los campos obligatorios deben ser llenados' });
     }
 
@@ -64,15 +81,18 @@ const registrarPaciente = async (req, res) => {
 
     // Insert usuario
     const { data: usuarioInsertadoData, error: usuarioInsertadoError } = await supabase
-      .from("usuario")
-      .insert([{
-        nombre_completo,
-        correo,
-        contrasena: hashedPassword,
-        rol,
-        fecha_nac,
-        teléfono
-      }]).select();
+      .from('usuario')
+      .insert([
+        {
+          nombre_completo,
+          correo,
+          contrasena: hashedPassword,
+          rol,
+          fecha_nac,
+          teléfono,
+        },
+      ])
+      .select();
 
     if (usuarioInsertadoError) throw usuarioInsertadoError;
 
@@ -80,19 +100,22 @@ const registrarPaciente = async (req, res) => {
 
     // Insert paciente
     const { data: pacienteData, error: pacienteError } = await supabase
-      .from("paciente")
-      .insert([{
-        id_usuario: usuario_insertado.id_usuario,
-        id_medico: id_medicoInt,
-        id_nivel_actividad: id_actividadInt,
-        genero,
-        peso: pesoNum,
-        altura: alturaNum,
-        embarazo: embarazadaBool,
-        nombre_emergencia,
-        numero_emergencia,
-        foto_perfil: imgUrl
-      }]).select();
+      .from('paciente')
+      .insert([
+        {
+          id_usuario: usuario_insertado.id_usuario,
+          id_medico: id_medicoInt,
+          id_nivel_actividad: id_actividadInt,
+          genero,
+          peso: pesoNum,
+          altura: alturaNum,
+          embarazo: embarazadaBool,
+          nombre_emergencia,
+          numero_emergencia,
+          foto_perfil: imgUrl,
+        },
+      ])
+      .select();
 
     if (pacienteError) throw pacienteError;
 
@@ -103,7 +126,7 @@ const registrarPaciente = async (req, res) => {
       await supabase.from('seguimiento_embarazo').insert({
         id_paciente: paciente.id_paciente,
         fecha_registro: usuario_insertado.fecha_registro,
-        semanas_embarazo: semanasInt
+        semanas_embarazo: semanasInt,
       });
     }
 
@@ -113,7 +136,7 @@ const registrarPaciente = async (req, res) => {
       .insert({
         id_paciente: paciente.id_paciente,
         id_tratamiento: tratamiento_idInt,
-        dosis: dosis_
+        dosis: dosis_,
       });
 
     if (errorTratamiento) throw errorTratamiento;
@@ -123,7 +146,7 @@ const registrarPaciente = async (req, res) => {
       .from('paciente_enfermedad')
       .insert({
         id_paciente: paciente.id_paciente,
-        id_enfermedad: enfermedad_idInt
+        id_enfermedad: enfermedad_idInt,
       });
 
     if (errorEnfermedad) throw errorEnfermedad;
@@ -131,11 +154,10 @@ const registrarPaciente = async (req, res) => {
     res.status(200).json({
       message: 'Usuario y paciente registrados correctamente',
       usuario_insertado,
-      paciente
+      paciente,
     });
-
   } catch (error) {
-    console.error("Error al insertar datos: ", error);
+    console.error('Error al insertar datos: ', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -151,7 +173,8 @@ const perfilPaciente = async (req, res) => {
     // 2. Consulta a Supabase
     const { data, error, status } = await supabase
       .from('paciente')
-      .select(`
+      .select(
+        `
         id_paciente,
         genero,
         altura,
@@ -198,7 +221,8 @@ const perfilPaciente = async (req, res) => {
           fecha_registro,
           fecha_terminacion
         )
-      `)
+      `,
+      )
       .eq('id_paciente', idPaciente)
       .maybeSingle();
 
@@ -210,9 +234,11 @@ const perfilPaciente = async (req, res) => {
         ip: req.ip,
         resultado: 'FALLIDO',
         motivo: error.message,
-        codigo_supabase: error.code
+        codigo_supabase: error.code,
       });
-      return res.status(status || 500).json({ error: 'Error al consultar el perfil del paciente', code: 'DB_QUERY_ERROR' });
+      return res
+        .status(status || 500)
+        .json({ error: 'Error al consultar el perfil del paciente', code: 'DB_QUERY_ERROR' });
     }
 
     // 4. MANEJO DE REGISTRO NO ENCONTRADO (404)
@@ -223,24 +249,24 @@ const perfilPaciente = async (req, res) => {
     // --- Función auxiliar para formatear fechas ---
     const formatearFecha = (fechaString) => {
       if (!fechaString) return null;
-      const partes = fechaString.split('T')[0].split('-'); 
+      const partes = fechaString.split('T')[0].split('-');
       if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
       return fechaString;
     };
 
     // 5. PROCESAMIENTO DE DATOS COMPLEJOS (Lógica de SQL -> JS)
-    
+
     // a. Mapeo de Afecciones (En tu SQL devolvías solo un array de strings)
-    const afeccionesList = data.paciente_enfermedad 
-      ? data.paciente_enfermedad.map(pe => pe.enfermedades_base?.nombre_enfermedad)
+    const afeccionesList = data.paciente_enfermedad
+      ? data.paciente_enfermedad.map((pe) => pe.enfermedades_base?.nombre_enfermedad)
       : [];
 
     // b. Mapeo de Tratamientos
     const tratamientosList = data.tratamiento_enfermedad
-      ? data.tratamiento_enfermedad.map(te => ({
+      ? data.tratamiento_enfermedad.map((te) => ({
           titulo: te.tratamientos?.nombre_tratamiento || '',
           descripcion: te.tratamientos?.descripcion || '',
-          dosis: te.dosis ? String(te.dosis) : null
+          dosis: te.dosis ? String(te.dosis) : null,
         }))
       : [];
 
@@ -249,14 +275,14 @@ const perfilPaciente = async (req, res) => {
     let fechaRegistroEmbarazo = null;
 
     if (data.embarazo && data.seguimiento_embarazo && data.seguimiento_embarazo.length > 0) {
-      // Ordenamos en JS: Primero los que no han terminado (terminacion === null), 
+      // Ordenamos en JS: Primero los que no han terminado (terminacion === null),
       // y si hay empate, el de la fecha de registro más reciente.
       const embarazosOrdenados = [...data.seguimiento_embarazo].sort((a, b) => {
         const aActivo = a.fecha_terminacion === null ? 0 : 1;
         const bActivo = b.fecha_terminacion === null ? 0 : 1;
-        
+
         if (aActivo !== bActivo) return aActivo - bActivo; // Prioriza los activos (0)
-        
+
         return new Date(b.fecha_registro) - new Date(a.fecha_registro); // Fecha DESC
       });
 
@@ -275,29 +301,29 @@ const perfilPaciente = async (req, res) => {
       peso: data.peso || null,
       telefono: data.usuario?.teléfono || null,
       correo: data.usuario?.correo || null,
-      
+
       // Datos de emergencia y perfil
       nombre_emergencia: data.nombre_emergencia || null,
       numero_emergencia: data.numero_emergencia || null,
       foto_perfil: data.foto_perfil || null,
-      
+
       // Datos médicos y admin
       nombre_medico: data.medico?.usuario?.nombre_completo || null,
       fecha_registro: data.usuario?.fecha_registro || null,
       admitidoPor: data.administrador?.usuario?.nombre_completo || null,
-      
+
       // Actividad Física (Objeto anidado como en tu SQL)
       actividadFisica: {
         nivel: data.nivel_actividad_fisica?.descripcion || null,
-        descripcion: data.nivel_actividad_fisica?.descripcion || null
+        descripcion: data.nivel_actividad_fisica?.descripcion || null,
       },
-      
+
       // Datos anidados y calculados
       afecciones: afeccionesList,
       tratamientos: tratamientosList,
       embarazo: data.embarazo || false,
       semanas_embarazo: semanasEmbarazoActual,
-      registro_embarazo: fechaRegistroEmbarazo
+      registro_embarazo: fechaRegistroEmbarazo,
     };
 
     // 7. RESPUESTA EXITOSA
@@ -306,11 +332,10 @@ const perfilPaciente = async (req, res) => {
       metodo: req.method,
       ip: req.ip,
       resultado: 'EXITOSO',
-      paciente_id: idPaciente
+      paciente_id: idPaciente,
     });
 
     return res.status(200).json(pacienteFormateado);
-
   } catch (err) {
     // 8. MANEJO DE ERRORES CRÍTICOS
     console.error({
@@ -319,12 +344,13 @@ const perfilPaciente = async (req, res) => {
       ip: req.ip,
       resultado: 'CRÍTICO',
       motivo: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
-    return res.status(500).json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
+    return res
+      .status(500)
+      .json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
   }
 };
-
 
 const registrosPaciente = async (req, res) => {
   try {
@@ -337,7 +363,8 @@ const registrosPaciente = async (req, res) => {
     // 2. Consulta Relacional en Supabase con Ordenamiento Múltiple
     const { data, error, status } = await supabase
       .from('registro_glucosa')
-      .select(`
+      .select(
+        `
         id_registro,
         fecha,
         hora,
@@ -360,7 +387,8 @@ const registrosPaciente = async (req, res) => {
             mensaje
           )
         )
-      `)
+      `,
+      )
       .eq('id_paciente', idPaciente)
       .order('fecha', { ascending: false }) // 👈 ORDER BY fecha DESC
       .order('hora', { ascending: false }); // 👈 ORDER BY hora DESC
@@ -373,9 +401,11 @@ const registrosPaciente = async (req, res) => {
         ip: req.ip,
         resultado: 'FALLIDO',
         motivo: error.message,
-        codigo_supabase: error.code
+        codigo_supabase: error.code,
       });
-      return res.status(status || 500).json({ error: 'Error al consultar los registros del paciente', code: 'DB_QUERY_ERROR' });
+      return res
+        .status(status || 500)
+        .json({ error: 'Error al consultar los registros del paciente', code: 'DB_QUERY_ERROR' });
     }
 
     // 4. MANEJO DE LISTAS VACÍAS
@@ -384,9 +414,9 @@ const registrosPaciente = async (req, res) => {
         fecha: new Date().toISOString(),
         metodo: req.method,
         resultado: 'EXITOSO',
-        mensaje: 'No hay registros de glucosa para este paciente.'
+        mensaje: 'No hay registros de glucosa para este paciente.',
       });
-      return res.status(200).json([]); 
+      return res.status(200).json([]);
     }
 
     // --- Función auxiliar para la hora ---
@@ -396,15 +426,23 @@ const registrosPaciente = async (req, res) => {
     };
 
     // 5. MAPEO Y APLANAMIENTO DE DATOS
-    const registrosFormateados = data.map(r => {
+    const registrosFormateados = data.map((r) => {
       // Manejo defensivo por si Supabase devuelve arreglos en relaciones 1:N
       const alerta = Array.isArray(r.alertas) ? r.alertas[0] : r.alertas;
-      const tipoAlerta = alerta ? (Array.isArray(alerta.tipo_alerta) ? alerta.tipo_alerta[0] : alerta.tipo_alerta) : null;
-      const retro = alerta ? (Array.isArray(alerta.retroalimentacion) ? alerta.retroalimentacion[0] : alerta.retroalimentacion) : null;
+      const tipoAlerta = alerta
+        ? Array.isArray(alerta.tipo_alerta)
+          ? alerta.tipo_alerta[0]
+          : alerta.tipo_alerta
+        : null;
+      const retro = alerta
+        ? Array.isArray(alerta.retroalimentacion)
+          ? alerta.retroalimentacion[0]
+          : alerta.retroalimentacion
+        : null;
 
       return {
         id: r.id_registro,
-        fecha: r.fecha, 
+        fecha: r.fecha,
         hora: formatearHora(r.hora),
         nivelGlucosa: r.nivel_glucosa ? Number(r.nivel_glucosa) : null,
         momentoDia: r.momento_dia?.momento || null,
@@ -412,7 +450,7 @@ const registrosPaciente = async (req, res) => {
         observaciones: r.observaciones || null,
         idAlerta: alerta?.id_alerta || null,
         tipo_alerta: tipoAlerta?.tipo || null,
-        respuesta: retro?.mensaje || null
+        respuesta: retro?.mensaje || null,
       };
     });
 
@@ -423,11 +461,10 @@ const registrosPaciente = async (req, res) => {
       ip: req.ip,
       resultado: 'EXITOSO',
       paciente_id: idPaciente,
-      registros_obtenidos: registrosFormateados.length
+      registros_obtenidos: registrosFormateados.length,
     });
 
     return res.status(200).json(registrosFormateados);
-
   } catch (err) {
     // 7. MANEJO DE ERRORES CRÍTICOS
     console.error({
@@ -436,42 +473,44 @@ const registrosPaciente = async (req, res) => {
       ip: req.ip,
       resultado: 'CRÍTICO',
       motivo: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
-    return res.status(500).json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
+    return res
+      .status(500)
+      .json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
   }
 };
-
-
 
 const registrarGlucosa = async (req, res) => {
   const {
     fecha,
     hora,
-  
+
     id_momento,
     id_paciente,
     nivel_glucosa,
-    observaciones
+    observaciones,
   } = req.body;
 
-  if (!fecha || !hora  || !id_momento || !id_paciente || !nivel_glucosa) {
-    return res.status(400).json({ error: "Todos los campos (menos observaciones) deben estar llenados" });
+  if (!fecha || !hora || !id_momento || !id_paciente || !nivel_glucosa) {
+    return res
+      .status(400)
+      .json({ error: 'Todos los campos (menos observaciones) deben estar llenados' });
   }
 
   try {
     const { data: glucosaData, error: glucosaError } = await supabase
-      .from("registro_glucosa")
+      .from('registro_glucosa')
       .insert([
         {
           id_paciente,
-         
+
           id_momento,
           fecha,
           hora,
           nivel_glucosa,
-          observaciones
-        }
+          observaciones,
+        },
       ])
       .select(); // devuelve el registro insertado
 
@@ -481,20 +520,15 @@ const registrarGlucosa = async (req, res) => {
 
     // Retornar el ID generado
     res.status(200).json({
-      message: "Registro insertado correctamente",
+      message: 'Registro insertado correctamente',
       id_registro: registro_glucosa.id, // ⚠️ asumimos que la columna PK es "id"
-      registro_glucosa
+      registro_glucosa,
     });
-
   } catch (error) {
-    console.error("Error al insertar los datos: ", error.message);
+    console.error('Error al insertar los datos: ', error.message);
     res.status(500).json({ error: error.message });
   }
 };
-
-
-
-
 
 const actualizarPaciente = async (req, res) => {
   const id_usuario = parseInt(req.params.id_usuario);
@@ -508,10 +542,18 @@ const actualizarPaciente = async (req, res) => {
     fecha_terminacion,
     semanas_embarazo,
     nombre_emergencia,
-    numero_emergencia
+    numero_emergencia,
   } = req.body;
 
-  if (!nombre || altura == null || !peso || !telefono || !correo || !nombre_emergencia || !numero_emergencia) {
+  if (
+    !nombre ||
+    altura == null ||
+    !peso ||
+    !telefono ||
+    !correo ||
+    !nombre_emergencia ||
+    !numero_emergencia
+  ) {
     return res.status(400).json({ error: 'Faltan datos obligatorios' });
   }
 
@@ -534,7 +576,7 @@ const actualizarPaciente = async (req, res) => {
       .update({
         nombre_completo: nombre,
         correo,
-        teléfono: telefono
+        teléfono: telefono,
       })
       .eq('id_usuario', id_usuario)
       .select()
@@ -550,7 +592,7 @@ const actualizarPaciente = async (req, res) => {
         peso: parseFloat(peso),
         embarazo: embarazo !== undefined ? embarazo : undefined,
         nombre_emergencia,
-        numero_emergencia
+        numero_emergencia,
       })
       .eq('id_usuario', id_usuario)
       .select()
@@ -561,14 +603,12 @@ const actualizarPaciente = async (req, res) => {
     // Manejo de seguimiento_embarazo
     if (embarazo === true && semanas_embarazo > 0) {
       // Insertar nuevo seguimiento
-      const { error: errorSeguimiento } = await supabase
-        .from('seguimiento_embarazo')
-        .insert({
-          id_paciente,
-          fecha_registro: new Date().toISOString().split('T')[0],
-          semanas_embarazo,
-          fecha_terminacion: null
-        });
+      const { error: errorSeguimiento } = await supabase.from('seguimiento_embarazo').insert({
+        id_paciente,
+        fecha_registro: new Date().toISOString().split('T')[0],
+        semanas_embarazo,
+        fecha_terminacion: null,
+      });
       if (errorSeguimiento) throw errorSeguimiento;
     } else if (embarazo === false && fecha_terminacion) {
       // Obtener el seguimiento más reciente activo
@@ -595,11 +635,10 @@ const actualizarPaciente = async (req, res) => {
 
     res.json({
       usuario: usuarioActualizado,
-      paciente: pacienteActualizado
+      paciente: pacienteActualizado,
     });
-
   } catch (error) {
-    console.error("Error al actualizar paciente:", error);
+    console.error('Error al actualizar paciente:', error);
     res.status(500).json({ error: 'Error al actualizar paciente', details: error });
   }
 };
@@ -610,9 +649,9 @@ const obtenerSemanasEmbarazoActual = async (req, res) => {
   try {
     // Obtener si el paciente está embarazado
     const { data: dataPaciente, error: errorPaciente } = await supabase
-      .from("paciente")
-      .select("embarazo")
-      .eq("id_paciente", id_paciente)
+      .from('paciente')
+      .select('embarazo')
+      .eq('id_paciente', id_paciente)
       .single();
 
     if (errorPaciente) throw errorPaciente;
@@ -622,11 +661,11 @@ const obtenerSemanasEmbarazoActual = async (req, res) => {
     if (embarazo === true) {
       // Obtener el último registro activo de embarazo
       const { data: dataEmbarazo, error: errorEmbarazo } = await supabase
-        .from("seguimiento_embarazo")
-        .select("fecha_registro, semanas_embarazo")
-        .eq("id_paciente", id_paciente)
-        .is("fecha_terminacion", null)
-        .order("fecha_registro", { ascending: false })
+        .from('seguimiento_embarazo')
+        .select('fecha_registro, semanas_embarazo')
+        .eq('id_paciente', id_paciente)
+        .is('fecha_terminacion', null)
+        .order('fecha_registro', { ascending: false })
         .limit(1);
 
       if (errorEmbarazo) throw errorEmbarazo;
@@ -651,12 +690,16 @@ const obtenerSemanasEmbarazoActual = async (req, res) => {
       return res.json({ semanas_actuales: null });
     }
   } catch (error) {
-    console.error("Error al obtener semanas de embarazo:", error);
-    return res.status(500).json({ error: "Error al obtener semanas de embarazo" });
+    console.error('Error al obtener semanas de embarazo:', error);
+    return res.status(500).json({ error: 'Error al obtener semanas de embarazo' });
   }
 };
 
-
-
-
-module.exports={perfilPaciente,registrosPaciente,registrarGlucosa,registrarPaciente,actualizarPaciente,obtenerSemanasEmbarazoActual};
+module.exports = {
+  perfilPaciente,
+  registrosPaciente,
+  registrarGlucosa,
+  registrarPaciente,
+  actualizarPaciente,
+  obtenerSemanasEmbarazoActual,
+};

@@ -1,92 +1,97 @@
-const supabase = require('../../database'); // tu cliente Supabase
+const supabase = require('../../database');
 const bcrypt = require('bcrypt');
 
 const registrarMedico = async (req, res) => {
   try {
-    const { nombre_completo, correo, contrasena, telefono, fecha_nac, id_especialidad, departamento } = req.body;
+    const {
+      nombre_completo,
+      correo,
+      contrasena,
+      telefono,
+      fecha_nac,
+      id_especialidad,
+      departamento,
+    } = req.body;
 
-    // 1️⃣ Validar archivos
     const pdfFiles = req.files?.matriculaProfesional;
     const imgFiles = req.files?.carnetProfesional;
 
     if (!pdfFiles || pdfFiles.length === 0) {
-      return res.status(400).json({ error: "Archivo de matrícula faltante" });
+      return res.status(400).json({ error: 'Archivo de matrícula faltante' });
     }
     if (!imgFiles || imgFiles.length === 0) {
-      return res.status(400).json({ error: "Archivo de carnet faltante" });
+      return res.status(400).json({ error: 'Archivo de carnet faltante' });
     }
 
     const pdf = pdfFiles[0];
     const img = imgFiles[0];
 
-    // 2️⃣ Subir archivos a Supabase
     const pdfUpload = await supabase.storage
-      .from("Matriculas_PDF")
+      .from('Matriculas_PDF')
       .upload(`pdfs/${Date.now()}_${pdf.originalname}`, pdf.buffer, { contentType: pdf.mimetype });
 
     const imgUpload = await supabase.storage
-      .from("Carnets_IMG")
+      .from('Carnets_IMG')
       .upload(`imgs/${Date.now()}_${img.originalname}`, img.buffer, { contentType: img.mimetype });
 
     if (pdfUpload.error) throw pdfUpload.error;
     if (imgUpload.error) throw imgUpload.error;
 
-    const pdfUrl = supabase.storage.from("Matriculas_PDF").getPublicUrl(pdfUpload.data.path).data.publicUrl;
-    const imgUrl = supabase.storage.from("Carnets_IMG").getPublicUrl(imgUpload.data.path).data.publicUrl;
+    const pdfUrl = supabase.storage.from('Matriculas_PDF').getPublicUrl(pdfUpload.data.path)
+      .data.publicUrl;
+    const imgUrl = supabase.storage.from('Carnets_IMG').getPublicUrl(imgUpload.data.path)
+      .data.publicUrl;
 
-    // 3️⃣ Hashear contraseña
     const hashed_contrasena = await bcrypt.hash(contrasena, 10);
     const rol = 'medico';
 
-    // 4️⃣ Insertar usuario
     const { data: usuarioData, error: usuarioError } = await supabase
-      .from("usuario")
-      .insert([{
-        nombre_completo,
-        correo,
-        contrasena: hashed_contrasena,
-        rol,
-        "teléfono": telefono,
-        fecha_nac
-      }])
+      .from('usuario')
+      .insert([
+        {
+          nombre_completo,
+          correo,
+          contrasena: hashed_contrasena,
+          rol,
+          teléfono: telefono,
+          fecha_nac,
+        },
+      ])
       .select();
 
     if (usuarioError) throw usuarioError;
     const usuario = usuarioData[0];
 
-    // 5️⃣ Insertar médico
     const { data: medicoData, error: medicoError } = await supabase
       .from('medico')
-      .insert([{
-        id_usuario: usuario.id_usuario,
-        id_especialidad,
-        matricula_profesional: pdfUrl,
-        departamento,
-        carnet_profesional: imgUrl,
-        administrador_id_admin: 1
-      }])
+      .insert([
+        {
+          id_usuario: usuario.id_usuario,
+          id_especialidad,
+          matricula_profesional: pdfUrl,
+          departamento,
+          carnet_profesional: imgUrl,
+          administrador_id_admin: 1,
+        },
+      ])
       .select();
 
     if (medicoError) throw medicoError;
 
-    res.status(200).json({ mensaje: "Médico registrado correctamente", usuario, medico: medicoData[0] });
-
+    res
+      .status(200)
+      .json({ mensaje: 'Médico registrado correctamente', usuario, medico: medicoData[0] });
   } catch (error) {
-    console.error("❌ Error en registrarMedico:", error);
+    console.error('❌ Error en registrarMedico:', error);
     res.status(500).json({ error: error.message });
   }
 };
 
 module.exports = { registrarMedico };
 
-
-
-
 const verMedicos = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('medico')
-      .select(`
+    const { data, error } = await supabase.from('medico').select(`
         id_medico,
         usuario ( nombre_completo )
       `);
@@ -100,8 +105,6 @@ const verMedicos = async (req, res) => {
   }
 };
 
-
-
 const perfilMedico = async (req, res) => {
   try {
     // Validamos que el ID sea un número válido
@@ -113,7 +116,8 @@ const perfilMedico = async (req, res) => {
     // 1. Consulta a Supabase usando .maybeSingle()
     const { data, error, status } = await supabase
       .from('medico')
-      .select(`
+      .select(
+        `
         id_medico,
         matricula_profesional,
         departamento,
@@ -129,9 +133,10 @@ const perfilMedico = async (req, res) => {
             nombre_completo
           )
         )
-      `)
+      `,
+      )
       .eq('id_usuario', idUsuario)
-      .maybeSingle(); // 👈 Perfecto para perfiles individuales
+      .maybeSingle();
 
     // 2. MANEJO DE ERRORES DE SUPABASE
     if (error) {
@@ -141,10 +146,12 @@ const perfilMedico = async (req, res) => {
         ip: req.ip,
         resultado: 'FALLIDO',
         motivo: error.message,
-        codigo_supabase: error.code
+        codigo_supabase: error.code,
       });
 
-      return res.status(status || 500).json({ error: 'Error al consultar el perfil del médico', code: 'DB_QUERY_ERROR' });
+      return res
+        .status(status || 500)
+        .json({ error: 'Error al consultar el perfil del médico', code: 'DB_QUERY_ERROR' });
     }
 
     // 3. MANEJO DE REGISTRO NO ENCONTRADO (404)
@@ -152,7 +159,7 @@ const perfilMedico = async (req, res) => {
       console.log({
         fecha: new Date().toISOString(),
         resultado: 'NO ENCONTRADO',
-        mensaje: `No se encontró un médico con el id_usuario: ${idUsuario}`
+        mensaje: `No se encontró un médico con el id_usuario: ${idUsuario}`,
       });
       return res.status(404).json({ message: 'No se encontró el médico' });
     }
@@ -160,7 +167,7 @@ const perfilMedico = async (req, res) => {
     // --- Función auxiliar para formatear fechas (DD/MM/YYYY) ---
     const formatearFecha = (fechaString) => {
       if (!fechaString) return null;
-      const partes = fechaString.split('T')[0].split('-'); 
+      const partes = fechaString.split('T')[0].split('-');
       if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
       return fechaString;
     };
@@ -176,7 +183,7 @@ const perfilMedico = async (req, res) => {
       departamento: data.departamento || 'N/A',
       carnet: data.carnet_profesional || 'N/A',
       // Mapeamos el nombre del administrador (con fallback "No" igual que tu SQL)
-      admin: data.administrador?.usuario?.nombre_completo || 'No'
+      admin: data.administrador?.usuario?.nombre_completo || 'No',
     };
 
     // 5. RESPUESTA EXITOSA
@@ -185,11 +192,10 @@ const perfilMedico = async (req, res) => {
       metodo: req.method,
       ip: req.ip,
       resultado: 'EXITOSO',
-      medico_id: medicoFormateado.id
+      medico_id: medicoFormateado.id,
     });
 
     return res.status(200).json(medicoFormateado);
-
   } catch (err) {
     console.error({
       fecha: new Date().toISOString(),
@@ -197,10 +203,12 @@ const perfilMedico = async (req, res) => {
       ip: req.ip,
       resultado: 'CRÍTICO',
       motivo: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
 
-    return res.status(500).json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
+    return res
+      .status(500)
+      .json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
   }
 };
 
@@ -215,7 +223,8 @@ const verPacientes = async (req, res) => {
     // 2. Consulta Relacional en Supabase
     const { data, error, status } = await supabase
       .from('paciente')
-      .select(`
+      .select(
+        `
         id_paciente,
         genero,
         peso,
@@ -263,7 +272,8 @@ const verPacientes = async (req, res) => {
             )
           )
         )
-      `)
+      `,
+      )
       .eq('id_medico', idMedico)
       .eq('usuario.estado', true);
 
@@ -275,9 +285,11 @@ const verPacientes = async (req, res) => {
         ip: req.ip,
         resultado: 'FALLIDO',
         motivo: error.message,
-        codigo_supabase: error.code
+        codigo_supabase: error.code,
       });
-      return res.status(status || 500).json({ error: 'Error al consultar pacientes', code: 'DB_QUERY_ERROR' });
+      return res
+        .status(status || 500)
+        .json({ error: 'Error al consultar pacientes', code: 'DB_QUERY_ERROR' });
     }
 
     // 4. MANEJO DE LISTAS VACÍAS
@@ -288,7 +300,7 @@ const verPacientes = async (req, res) => {
     // --- Funciones auxiliares de formateo ---
     const formatearFecha = (fechaString) => {
       if (!fechaString) return null;
-      const partes = fechaString.split('T')[0].split('-'); 
+      const partes = fechaString.split('T')[0].split('-');
       if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
       return fechaString;
     };
@@ -299,20 +311,20 @@ const verPacientes = async (req, res) => {
     };
 
     // 5. MAPEO Y AGRUPACIÓN DE DATOS
-    const pacientesFormateados = data.map(p => {
+    const pacientesFormateados = data.map((p) => {
       // Afecciones
-      const afeccionesList = p.paciente_enfermedad 
-        ? p.paciente_enfermedad.map(pe => ({
-            afeccion: pe.enfermedades_base?.nombre_enfermedad || 'Desconocida'
+      const afeccionesList = p.paciente_enfermedad
+        ? p.paciente_enfermedad.map((pe) => ({
+            afeccion: pe.enfermedades_base?.nombre_enfermedad || 'Desconocida',
           }))
         : [];
 
       // Tratamientos
       const tratamientosList = p.tratamiento_enfermedad
-        ? p.tratamiento_enfermedad.map(te => ({
+        ? p.tratamiento_enfermedad.map((te) => ({
             titulo: te.tratamientos?.nombre_tratamiento || 'Sin título',
             desc: te.tratamientos?.descripcion || '',
-            dosis: te.dosis ? String(te.dosis) : null
+            dosis: te.dosis ? String(te.dosis) : null,
           }))
         : [];
 
@@ -320,15 +332,15 @@ const verPacientes = async (req, res) => {
       const rawRegistros = p.registro_glucosa || [];
       const historialMap = {};
 
-      rawRegistros.forEach(reg => {
+      rawRegistros.forEach((reg) => {
         const fechaFormateada = formatearFecha(reg.fecha);
-        
+
         // Inicializamos el grupo por fecha si no existe
         if (!historialMap[reg.fecha]) {
           historialMap[reg.fecha] = {
             fechaFormateada: fechaFormateada,
             fechaRaw: reg.fecha, // Guardamos la cruda para ordenar después
-            registros: []
+            registros: [],
           };
         }
 
@@ -337,13 +349,17 @@ const verPacientes = async (req, res) => {
         let alertaFormat = null;
 
         if (alertaData) {
-          const tipoAlerta = Array.isArray(alertaData.tipo_alerta) ? alertaData.tipo_alerta[0] : alertaData.tipo_alerta;
-          const retro = Array.isArray(alertaData.retroalimentacion) ? alertaData.retroalimentacion[0] : alertaData.retroalimentacion;
+          const tipoAlerta = Array.isArray(alertaData.tipo_alerta)
+            ? alertaData.tipo_alerta[0]
+            : alertaData.tipo_alerta;
+          const retro = Array.isArray(alertaData.retroalimentacion)
+            ? alertaData.retroalimentacion[0]
+            : alertaData.retroalimentacion;
 
           alertaFormat = {
             nivel: tipoAlerta?.tipo || null,
             observacion: reg.observaciones || null,
-            mensaje: retro?.mensaje || null
+            mensaje: retro?.mensaje || null,
           };
         }
 
@@ -353,26 +369,26 @@ const verPacientes = async (req, res) => {
           hora: formatearHora(reg.hora),
           momento: reg.momento_dia?.momento || null,
           glucosa: reg.nivel_glucosa ? String(reg.nivel_glucosa) : null,
-          alerta: alertaFormat
+          alerta: alertaFormat,
         });
       });
 
       // Convertimos el mapa a un arreglo, ordenamos por Fecha (DESC) y luego por Hora (ASC)
       const historialAgrupado = Object.values(historialMap)
         .sort((a, b) => new Date(b.fechaRaw) - new Date(a.fechaRaw)) // Orden Fecha DESC
-        .map(grupo => {
+        .map((grupo) => {
           // Orden Hora ASC dentro de cada grupo de fecha
           grupo.registros.sort((a, b) => a.hora.localeCompare(b.hora));
           return {
             fecha: grupo.fechaFormateada,
-            registros: grupo.registros
+            registros: grupo.registros,
           };
         });
 
       return {
         id: p.id_paciente,
         nombre: p.usuario?.nombre_completo || 'Sin nombre',
-        ci: p.usuario?.id_usuario ? String(p.usuario.id_usuario) : null, 
+        ci: p.usuario?.id_usuario ? String(p.usuario.id_usuario) : null,
         fechaNac: formatearFecha(p.usuario?.fecha_nac),
         genero: p.genero || null,
         peso: p.peso ? String(p.peso) : null,
@@ -385,7 +401,7 @@ const verPacientes = async (req, res) => {
         foto_perfil: p.foto_perfil || null,
         afecciones: afeccionesList,
         tratamientos: tratamientosList,
-        historial: historialAgrupado // 👈 Historial perfectamente agrupado y ordenado
+        historial: historialAgrupado, // 👈 Historial perfectamente agrupado y ordenado
       };
     });
 
@@ -396,11 +412,10 @@ const verPacientes = async (req, res) => {
       ip: req.ip,
       resultado: 'EXITOSO',
       medico_id: idMedico,
-      pacientes_encontrados: pacientesFormateados.length
+      pacientes_encontrados: pacientesFormateados.length,
     });
 
     return res.status(200).json(pacientesFormateados);
-
   } catch (err) {
     console.error({
       fecha: new Date().toISOString(),
@@ -408,12 +423,13 @@ const verPacientes = async (req, res) => {
       ip: req.ip,
       resultado: 'CRÍTICO',
       motivo: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
-    return res.status(500).json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
+    return res
+      .status(500)
+      .json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
   }
 };
-
 
 const alertasActivas = async (req, res) => {
   try {
@@ -426,7 +442,8 @@ const alertasActivas = async (req, res) => {
     // 2. Consulta Relacional en Supabase
     const { data, error, status } = await supabase
       .from('alertas')
-      .select(`
+      .select(
+        `
         id_alerta,
         estado,
         tipo_alerta!inner (
@@ -448,7 +465,8 @@ const alertasActivas = async (req, res) => {
             momento
           )
         )
-      `)
+      `,
+      )
       .eq('estado', true) // 👈 Equivalente a a.estado = true
       .eq('registro_glucosa.id_medico', idMedico); // 👈 Equivalente a rg.id_medico = id_medico_input
 
@@ -460,9 +478,11 @@ const alertasActivas = async (req, res) => {
         ip: req.ip,
         resultado: 'FALLIDO',
         motivo: error.message,
-        codigo_supabase: error.code
+        codigo_supabase: error.code,
       });
-      return res.status(status || 500).json({ error: 'Error al consultar las alertas', code: 'DB_QUERY_ERROR' });
+      return res
+        .status(status || 500)
+        .json({ error: 'Error al consultar las alertas', code: 'DB_QUERY_ERROR' });
     }
 
     // 4. MANEJO DE LISTAS VACÍAS
@@ -471,7 +491,7 @@ const alertasActivas = async (req, res) => {
         fecha: new Date().toISOString(),
         metodo: req.method,
         resultado: 'EXITOSO',
-        mensaje: 'No hay alertas activas para este médico.'
+        mensaje: 'No hay alertas activas para este médico.',
       });
       return res.status(200).json([]); // Siempre devuelve [] para listas vacías
     }
@@ -483,7 +503,7 @@ const alertasActivas = async (req, res) => {
     };
 
     // 5. MAPEO Y APLANAMIENTO DE DATOS
-    const alertasFormateadas = data.map(a => ({
+    const alertasFormateadas = data.map((a) => ({
       id: a.id_alerta,
       nivel: a.tipo_alerta?.tipo || 'Desconocido',
       idpaciente: a.registro_glucosa?.paciente?.id_paciente,
@@ -491,10 +511,10 @@ const alertasActivas = async (req, res) => {
       fecha: a.registro_glucosa?.fecha, // No usamos formatearFecha aquí porque tu SQL devolvía DATE puro
       hora: formatearHora(a.registro_glucosa?.hora),
       glucosa: a.registro_glucosa?.nivel_glucosa ? Number(a.registro_glucosa.nivel_glucosa) : null,
-      
+
       // COALESCE(..., '') de tu SQL se traduce limpiamente con || '' en JavaScript
       momento: a.registro_glucosa?.momento_dia?.momento || '',
-      observaciones: a.registro_glucosa?.observaciones || ''
+      observaciones: a.registro_glucosa?.observaciones || '',
     }));
 
     // 6. RESPUESTA EXITOSA
@@ -504,11 +524,10 @@ const alertasActivas = async (req, res) => {
       ip: req.ip,
       resultado: 'EXITOSO',
       medico_id: idMedico,
-      alertas_encontradas: alertasFormateadas.length
+      alertas_encontradas: alertasFormateadas.length,
     });
 
     return res.status(200).json(alertasFormateadas);
-
   } catch (err) {
     // 7. MANEJO DE ERRORES CRÍTICOS
     console.error({
@@ -517,12 +536,13 @@ const alertasActivas = async (req, res) => {
       ip: req.ip,
       resultado: 'CRÍTICO',
       motivo: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
-    return res.status(500).json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
+    return res
+      .status(500)
+      .json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
   }
 };
-
 
 const alertasResueltas = async (req, res) => {
   try {
@@ -535,7 +555,8 @@ const alertasResueltas = async (req, res) => {
     // 2. Consulta Relacional en Supabase
     const { data, error, status } = await supabase
       .from('alertas')
-      .select(`
+      .select(
+        `
         id_alerta,
         estado,
         tipo_alerta!inner (
@@ -561,7 +582,8 @@ const alertasResueltas = async (req, res) => {
             momento
           )
         )
-      `)
+      `,
+      )
       .eq('estado', false) // 👈 Buscamos las resueltas (estado = false)
       .eq('registro_glucosa.id_medico', idMedico);
 
@@ -573,9 +595,11 @@ const alertasResueltas = async (req, res) => {
         ip: req.ip,
         resultado: 'FALLIDO',
         motivo: error.message,
-        codigo_supabase: error.code
+        codigo_supabase: error.code,
       });
-      return res.status(status || 500).json({ error: 'Error al consultar las alertas resueltas', code: 'DB_QUERY_ERROR' });
+      return res
+        .status(status || 500)
+        .json({ error: 'Error al consultar las alertas resueltas', code: 'DB_QUERY_ERROR' });
     }
 
     // 4. MANEJO DE LISTAS VACÍAS
@@ -584,7 +608,7 @@ const alertasResueltas = async (req, res) => {
         fecha: new Date().toISOString(),
         metodo: req.method,
         resultado: 'EXITOSO',
-        mensaje: 'No hay alertas resueltas para este médico.'
+        mensaje: 'No hay alertas resueltas para este médico.',
       });
       return res.status(200).json([]);
     }
@@ -592,33 +616,37 @@ const alertasResueltas = async (req, res) => {
     // --- Función auxiliar para la hora ---
     const formatearHora = (horaString) => {
       if (!horaString) return null;
-      return horaString.substring(0, 5); 
+      return horaString.substring(0, 5);
     };
 
     // 5. MAPEO Y APLANAMIENTO DE DATOS
-    const alertasFormateadas = data.map(a => {
+    const alertasFormateadas = data.map((a) => {
       // Dependiendo de cómo creaste la relación, la retroalimentación puede llegar como objeto o arreglo.
       // Esta línea nos protege de ambos casos para extraer el mensaje correctamente:
-      const retro = Array.isArray(a.retroalimentacion) ? a.retroalimentacion[0] : a.retroalimentacion;
+      const retro = Array.isArray(a.retroalimentacion)
+        ? a.retroalimentacion[0]
+        : a.retroalimentacion;
 
       return {
         id: a.id_alerta,
         nivel: a.tipo_alerta?.tipo || 'Desconocido',
-        
+
         // Emulamos el COALESCE(p.id_paciente, rg.id_paciente)
         idpaciente: a.registro_glucosa?.paciente?.id_paciente || a.registro_glucosa?.id_paciente,
-        
+
         // Fallback a String vacío ('') como lo tenías en tu SQL
         paciente: a.registro_glucosa?.paciente?.usuario?.nombre_completo || '',
-        
+
         fecha: a.registro_glucosa?.fecha,
         hora: formatearHora(a.registro_glucosa?.hora),
-        glucosa: a.registro_glucosa?.nivel_glucosa ? Number(a.registro_glucosa.nivel_glucosa) : null,
+        glucosa: a.registro_glucosa?.nivel_glucosa
+          ? Number(a.registro_glucosa.nivel_glucosa)
+          : null,
         momento: a.registro_glucosa?.momento_dia?.momento || '',
         observaciones: a.registro_glucosa?.observaciones || '',
-        
+
         // Nuevo campo que sacamos de la tabla retroalimentacion
-        mensaje: retro?.mensaje || ''
+        mensaje: retro?.mensaje || '',
       };
     });
 
@@ -629,11 +657,10 @@ const alertasResueltas = async (req, res) => {
       ip: req.ip,
       resultado: 'EXITOSO',
       medico_id: idMedico,
-      alertas_encontradas: alertasFormateadas.length
+      alertas_encontradas: alertasFormateadas.length,
     });
 
     return res.status(200).json(alertasFormateadas);
-
   } catch (err) {
     // 7. MANEJO DE ERRORES CRÍTICOS
     console.error({
@@ -642,9 +669,11 @@ const alertasResueltas = async (req, res) => {
       ip: req.ip,
       resultado: 'CRÍTICO',
       motivo: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
-    return res.status(500).json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
+    return res
+      .status(500)
+      .json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
   }
 };
 
@@ -664,10 +693,10 @@ const retroalimentacionAlerta = async (req, res) => {
           id_medico,
           fecha_registro,
           mensaje,
-          alertas_id_alerta
-        }
+          alertas_id_alerta,
+        },
       ])
-      .select();   // Para devolver la fila insertada
+      .select(); // Para devolver la fila insertada
 
     if (retroError) throw retroError;
 
@@ -683,34 +712,27 @@ const retroalimentacionAlerta = async (req, res) => {
     return res.status(200).json({
       message: 'Alerta respondida y actualizada correctamente',
       retroalimentacion: retroData,
-      alerta_actualizada: alertaUpdate
+      alerta_actualizada: alertaUpdate,
     });
-
   } catch (err) {
     console.error('Error al responder alerta:', err.message);
     res.status(500).json({ error: err.message });
   }
 };
 
-
 const registrarGlucosaMedico = async (req, res) => {
-  const {
-    fecha,
-    hora,
-    id_medico,
-    id_momento,
-    id_paciente,
-    nivel_glucosa,
-    observaciones
-  } = req.body;
+  const { fecha, hora, id_medico, id_momento, id_paciente, nivel_glucosa, observaciones } =
+    req.body;
 
   if (!fecha || !hora || !id_medico || !id_momento || !id_paciente || !nivel_glucosa) {
-    return res.status(400).json({ error: "Todos los campos (menos observaciones) deben estar llenados" });
+    return res
+      .status(400)
+      .json({ error: 'Todos los campos (menos observaciones) deben estar llenados' });
   }
 
   try {
     const { data: glucosaData, error: glucosaError } = await supabase
-      .from("registro_glucosa")
+      .from('registro_glucosa')
       .insert([
         {
           id_paciente,
@@ -719,8 +741,8 @@ const registrarGlucosaMedico = async (req, res) => {
           fecha,
           hora,
           nivel_glucosa,
-          observaciones
-        }
+          observaciones,
+        },
       ])
       .select(); // devuelve el registro insertado
 
@@ -730,13 +752,12 @@ const registrarGlucosaMedico = async (req, res) => {
 
     // Retornar el ID generado
     res.status(200).json({
-      message: "Registro insertado correctamente",
+      message: 'Registro insertado correctamente',
       id_registro: registro_glucosa.id, // ⚠️ asumimos que la columna PK es "id"
-      registro_glucosa
+      registro_glucosa,
     });
-
   } catch (error) {
-    console.error("Error al insertar los datos: ", error.message);
+    console.error('Error al insertar los datos: ', error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -762,7 +783,7 @@ const actualizarMedico = async (req, res) => {
 
     // 2️⃣ Preparar actualizaciones
     const usuarioUpdates = {};
-    if (telefono !== undefined) usuarioUpdates["teléfono"] = telefono;
+    if (telefono !== undefined) usuarioUpdates['teléfono'] = telefono;
     if (correo !== undefined) usuarioUpdates.correo = correo;
 
     const medicoUpdates = {};
@@ -771,27 +792,19 @@ const actualizarMedico = async (req, res) => {
     // 3️⃣ Subir nuevo carnet si hay archivo
     if (carnetFile) {
       const fileName = `carnet-${id_usuario}-${Date.now()}.${carnetFile.originalname.split('.').pop()}`;
-      
+
       // Subir el archivo al bucket
-      const { data: uploadData, error: uploadError } = await supabase
-        .storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('Carnets_IMG')
-        .upload(
-          fileName,
-          carnetFile.buffer,
-          {
-            contentType: carnetFile.mimetype,
-            upsert: true
-          }
-        );
+        .upload(fileName, carnetFile.buffer, {
+          contentType: carnetFile.mimetype,
+          upsert: true,
+        });
 
       if (uploadError) throw uploadError;
 
       // Obtener URL pública - CORRECCIÓN AQUÍ
-      const { data: urlData } = supabase
-        .storage
-        .from('Carnets_IMG')
-        .getPublicUrl(uploadData.path);
+      const { data: urlData } = supabase.storage.from('Carnets_IMG').getPublicUrl(uploadData.path);
 
       // Asignar la URL pública al campo carnet_profesional
       medicoUpdates.carnet_profesional = urlData.publicUrl;
@@ -817,14 +830,13 @@ const actualizarMedico = async (req, res) => {
 
     return res.status(200).json({
       message: 'Datos actualizados correctamente',
-      carnet_url: medicoUpdates.carnet_profesional || 'No se actualizó el carnet'
+      carnet_url: medicoUpdates.carnet_profesional || 'No se actualizó el carnet',
     });
-
   } catch (error) {
     console.error('Error al actualizar:', error);
     return res.status(500).json({
       message: 'Error al actualizar los datos',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -839,5 +851,5 @@ module.exports = {
   alertasResueltas,
   retroalimentacionAlerta,
   registrarGlucosaMedico,
-  actualizarMedico
+  actualizarMedico,
 };

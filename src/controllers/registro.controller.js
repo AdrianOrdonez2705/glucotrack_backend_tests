@@ -1,10 +1,9 @@
-const supabase = require('../../database'); // tu cliente Supabase
-
+const supabase = require('../../database');
 
 const datosParaGlucosa = async (req, res) => {
   try {
     // 1. Validar parámetro (Ojo: Asegúrate de que el frontend envíe el ID del paciente)
-    const idPaciente = parseInt(req.params.idUsuario); // O req.params.idPaciente según tu ruta
+    const idPaciente = parseInt(req.params.idUsuario);
     if (isNaN(idPaciente)) {
       return res.status(400).json({ error: 'El ID del paciente debe ser un número válido' });
     }
@@ -12,7 +11,8 @@ const datosParaGlucosa = async (req, res) => {
     // 2. Consulta a Supabase
     const { data, error, status } = await supabase
       .from('paciente')
-      .select(`
+      .select(
+        `
         id_paciente,
         embarazo,
         id_medico,
@@ -24,7 +24,8 @@ const datosParaGlucosa = async (req, res) => {
             nombre_enfermedad
           )
         )
-      `)
+      `,
+      )
       .eq('id_paciente', idPaciente)
       .maybeSingle();
 
@@ -36,9 +37,11 @@ const datosParaGlucosa = async (req, res) => {
         ip: req.ip,
         resultado: 'FALLIDO',
         motivo: error.message,
-        codigo_supabase: error.code
+        codigo_supabase: error.code,
       });
-      return res.status(status || 500).json({ error: 'Error al consultar los datos del paciente', code: 'DB_QUERY_ERROR' });
+      return res
+        .status(status || 500)
+        .json({ error: 'Error al consultar los datos del paciente', code: 'DB_QUERY_ERROR' });
     }
 
     // 4. MANEJO DE REGISTRO NO ENCONTRADO (404)
@@ -46,7 +49,7 @@ const datosParaGlucosa = async (req, res) => {
       console.log({
         fecha: new Date().toISOString(),
         resultado: 'NO ENCONTRADO',
-        mensaje: `No se encontró un paciente con el id: ${idPaciente}`
+        mensaje: `No se encontró un paciente con el id: ${idPaciente}`,
       });
       return res.status(404).json({ message: 'No se encontraron datos para este paciente' });
     }
@@ -58,7 +61,7 @@ const datosParaGlucosa = async (req, res) => {
       const fechaNac = new Date(fechaNacimiento);
       let edad = hoy.getFullYear() - fechaNac.getFullYear();
       const mes = hoy.getMonth() - fechaNac.getMonth();
-      
+
       // Si aún no ha pasado su mes de cumpleaños, o si es el mes pero no ha llegado el día, restamos 1 año
       if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
         edad--;
@@ -67,10 +70,12 @@ const datosParaGlucosa = async (req, res) => {
     };
 
     // 5. MAPEO Y CONSTRUCCIÓN DEL OBJETO FINAL
-    
+
     // Extracción de las enfermedades (tu SQL devolvía un array de strings)
-    const enfermedadesList = data.paciente_enfermedad 
-      ? data.paciente_enfermedad.map(pe => pe.enfermedades_base?.nombre_enfermedad).filter(Boolean)
+    const enfermedadesList = data.paciente_enfermedad
+      ? data.paciente_enfermedad
+          .map((pe) => pe.enfermedades_base?.nombre_enfermedad)
+          .filter(Boolean)
       : [];
 
     const datosGlucosa = {
@@ -78,7 +83,7 @@ const datosParaGlucosa = async (req, res) => {
       embarazo: data.embarazo || false,
       id_medico: data.id_medico || null,
       id_paciente: data.id_paciente,
-      enfermedades: enfermedadesList
+      enfermedades: enfermedadesList,
     };
 
     // 6. RESPUESTA EXITOSA
@@ -87,11 +92,10 @@ const datosParaGlucosa = async (req, res) => {
       metodo: req.method,
       ip: req.ip,
       resultado: 'EXITOSO',
-      paciente_id: datosGlucosa.id_paciente
+      paciente_id: datosGlucosa.id_paciente,
     });
 
     return res.status(200).json(datosGlucosa);
-
   } catch (err) {
     // 7. MANEJO DE ERRORES CRÍTICOS
     console.error({
@@ -100,16 +104,16 @@ const datosParaGlucosa = async (req, res) => {
       ip: req.ip,
       resultado: 'CRÍTICO',
       motivo: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
-    return res.status(500).json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
+    return res
+      .status(500)
+      .json({ error: 'Error interno del servidor', code: 'INTERNAL_SERVER_ERROR' });
   }
 };
- 
 
-
-const nodemailer = require("nodemailer");
-const { getHipoTemplate, getHiperTemplate } = require("../email/templates");
+const nodemailer = require('nodemailer');
+const { getHipoTemplate, getHiperTemplate } = require('../email/templates');
 
 const registrarAlerta = async (req, res) => {
   const { id_tipo_alerta, id_registro, id_medico, fecha_alerta } = req.body;
@@ -128,8 +132,8 @@ const registrarAlerta = async (req, res) => {
           id_tipo_alerta,
           id_registro,
           id_medico,
-          fecha_alerta
-        }
+          fecha_alerta,
+        },
       ])
       .select();
 
@@ -143,48 +147,48 @@ const registrarAlerta = async (req, res) => {
 
     // Obtener registro de glucosa
     const { data: registro } = await supabase
-      .from("registro_glucosa")
-      .select("id_paciente, nivel_glucosa, fecha, hora,observaciones")
-      .eq("id_registro", id_registro)
+      .from('registro_glucosa')
+      .select('id_paciente, nivel_glucosa, fecha, hora,observaciones')
+      .eq('id_registro', id_registro)
       .single();
 
-    if (!registro) throw new Error("Registro de glucosa no encontrado");
+    if (!registro) throw new Error('Registro de glucosa no encontrado');
 
     // Obtener paciente
     const { data: paciente } = await supabase
-      .from("paciente")
-      .select("id_usuario, id_medico")
-      .eq("id_paciente", registro.id_paciente)
+      .from('paciente')
+      .select('id_usuario, id_medico')
+      .eq('id_paciente', registro.id_paciente)
       .single();
 
-    if (!paciente) throw new Error("Paciente no encontrado");
+    if (!paciente) throw new Error('Paciente no encontrado');
 
     // Obtener médico asignado
     const { data: medico } = await supabase
-      .from("medico")
-      .select("id_usuario")
-      .eq("id_medico", paciente.id_medico)
+      .from('medico')
+      .select('id_usuario')
+      .eq('id_medico', paciente.id_medico)
       .single();
 
-    if (!medico) throw new Error("Médico asignado no encontrado");
+    if (!medico) throw new Error('Médico asignado no encontrado');
 
     // Obtener correo del usuario del médico
     const { data: usuarioMedico } = await supabase
-      .from("usuario")
-      .select("correo, nombre_completo")
-      .eq("id_usuario", medico.id_usuario)
+      .from('usuario')
+      .select('correo, nombre_completo')
+      .eq('id_usuario', medico.id_usuario)
       .single();
 
-    if (!usuarioMedico) throw new Error("Usuario del médico no encontrado");
-    
+    if (!usuarioMedico) throw new Error('Usuario del médico no encontrado');
+
     // Obtener nombre del PACIENTE (usuario del paciente)
     const { data: usuarioPaciente } = await supabase
-      .from("usuario")
-      .select("nombre_completo")
-      .eq("id_usuario", paciente.id_usuario)
+      .from('usuario')
+      .select('nombre_completo')
+      .eq('id_usuario', paciente.id_usuario)
       .single();
 
-    if (!usuarioPaciente) throw new Error("Usuario del paciente no encontrado");
+    if (!usuarioPaciente) throw new Error('Usuario del paciente no encontrado');
 
     // ----------------------------------------------------------
     // 3️⃣ PREPARAR PLANTILLA DEL CORREO
@@ -196,35 +200,33 @@ const registrarAlerta = async (req, res) => {
       valor: registro.nivel_glucosa,
       fecha: registro.fecha,
       hora: registro.hora,
-      nombreMedico:usuarioMedico.nombre_completo,
-      observaciones:registro.observaciones
+      nombreMedico: usuarioMedico.nombre_completo,
+      observaciones: registro.observaciones,
     };
 
     const template =
-      id_tipo_alerta === 1
-        ? getHipoTemplate(datosCorreo)
-        : getHiperTemplate(datosCorreo);
+      id_tipo_alerta === 1 ? getHipoTemplate(datosCorreo) : getHiperTemplate(datosCorreo);
 
     // ----------------------------------------------------------
     // 4️⃣ ENVIAR CORREO
     // ----------------------------------------------------------
 
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        pass: process.env.EMAIL_PASS,
       },
       tls: {
-    rejectUnauthorized: false
-  }
+        rejectUnauthorized: false,
+      },
     });
 
     await transporter.sendMail({
       from: `"GlucoTracker" <${process.env.EMAIL_USER}>`,
       to: usuarioMedico.correo,
       subject: template.subject,
-      html: template.html
+      html: template.html,
     });
 
     // ----------------------------------------------------------
@@ -233,9 +235,8 @@ const registrarAlerta = async (req, res) => {
 
     res.status(200).json({
       message: 'Alerta registrada y correo enviado correctamente',
-      alerta: alertaInsertada
+      alerta: alertaInsertada,
     });
-
   } catch (err) {
     console.error('Error al insertar alerta:', err.message);
     res.status(500).json({ error: err.message });
@@ -243,4 +244,4 @@ const registrarAlerta = async (req, res) => {
 };
 
 module.exports = { registrarAlerta };
-module.exports = { datosParaGlucosa ,registrarAlerta };
+module.exports = { datosParaGlucosa, registrarAlerta };

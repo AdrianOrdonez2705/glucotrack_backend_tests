@@ -1,4 +1,4 @@
-const getHipoTemplate = ({ nombrePaciente, valor, fecha, hora ,nombreMedico,observaciones}) => ({
+const getHipoTemplate = ({ nombrePaciente, valor, fecha, hora, nombreMedico, observaciones }) => ({
   subject: `Alerta de Hipoglucemia - ${nombrePaciente}`,
   html: `
     <p>Estimado/a Doctor/a ${nombreMedico},</p>
@@ -14,10 +14,10 @@ const getHipoTemplate = ({ nombrePaciente, valor, fecha, hora ,nombreMedico,obse
 
 
     <p>Atentamente,<br>GlucoTracker</p>
-  `
+  `,
 });
 
-const getHiperTemplate = ({ nombrePaciente, valor, fecha, hora,observaciones }) => ({
+const getHiperTemplate = ({ nombrePaciente, valor, fecha, hora, observaciones }) => ({
   subject: `Alerta de Hiperglucemia - ${nombrePaciente}`,
   html: `
     <p>Estimado/a Doctor/a,</p>
@@ -34,9 +34,8 @@ const getHiperTemplate = ({ nombrePaciente, valor, fecha, hora,observaciones }) 
 
 
     <p>Atentamente,<br>GlucoTracker</p>
-  `
+  `,
 });
-
 
 const getOtpTemplate = ({ nombreUsuario, codigo }) => ({
   subject: `Código de verificación para GlucoTracker`,
@@ -47,8 +46,7 @@ const getOtpTemplate = ({ nombreUsuario, codigo }) => ({
     <p>Este código expirará en 5 minutos.</p>
     <p>Si no solicitaste este código, ignora este correo.</p>
     <p>Atentamente,<br>GlucoTracker</p>
-  `
+  `,
 });
 
 module.exports = { getHipoTemplate, getHiperTemplate, getOtpTemplate };
-

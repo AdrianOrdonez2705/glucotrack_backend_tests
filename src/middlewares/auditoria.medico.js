@@ -1,17 +1,28 @@
 const supabase = require('../../database');
 
 const auditoriaMedico = async (req, res, next) => {
-  let called = false; // ✅ para que la auditoría se registre solo una vez
+  let called = false;
 
   const originalSend = res.send.bind(res);
 
   const registrarAuditoria = async () => {
-    if (called) return; // ya registrado
+    if (called) return;
     called = true;
 
     try {
-      let id_usuario = req.params?.id_usuario || req.body?.id_usuario || req.query?.id_usuario ||req.params?.idUsuario|| null;
-      let id_medico = req.params?.idMedico || req.body?.idMedico || req.query?.idMedico || req.params?.id_medico || req.body?.id_medico ||null;
+      let id_usuario =
+        req.params?.id_usuario ||
+        req.body?.id_usuario ||
+        req.query?.id_usuario ||
+        req.params?.idUsuario ||
+        null;
+      let id_medico =
+        req.params?.idMedico ||
+        req.body?.idMedico ||
+        req.query?.idMedico ||
+        req.params?.id_medico ||
+        req.body?.id_medico ||
+        null;
 
       // Resolver id_usuario si solo tenemos id_medico
       if (!id_usuario && id_medico) {
@@ -34,16 +45,18 @@ const auditoriaMedico = async (req, res, next) => {
       }
 
       // Insertar auditoría
-      await supabase.from('auditoria_endpoints').insert([{
-        id_usuario,
-        rol: 'medico',
-        id_rol: id_medico,
-        endpoint: req.originalUrl,
-        operacion: req.method,
-        exito: res.statusCode < 400,
-        codigo_http: res.statusCode,
-        ip_origen: req.ip
-      }]);
+      await supabase.from('auditoria_endpoints').insert([
+        {
+          id_usuario,
+          rol: 'medico',
+          id_rol: id_medico,
+          endpoint: req.originalUrl,
+          operacion: req.method,
+          exito: res.statusCode < 400,
+          codigo_http: res.statusCode,
+          ip_origen: req.ip,
+        },
+      ]);
     } catch (err) {
       console.error('Error auditoría medico:', err?.message || err);
     }
