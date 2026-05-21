@@ -1,4 +1,4 @@
-const supabase = require('../../database');
+import supabase from '../config/database.js';
 
 const auditoriaEndpoint = (rolDefecto = null) => {
   return async (req, res, next) => {
@@ -63,4 +63,4 @@ const auditoriaEndpoint = (rolDefecto = null) => {
   };
 };
 
-module.exports = auditoriaEndpoint;
+export default auditoriaEndpoint;

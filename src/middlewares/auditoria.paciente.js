@@ -1,4 +1,4 @@
-const supabase = require('../../database');
+import supabase from '../config/database.js';
 
 const auditoriaPaciente = async (req, res, next) => {
   let called = false;
@@ -53,7 +53,7 @@ const auditoriaPaciente = async (req, res, next) => {
           .maybeSingle();
 
         if (registroError) {
-          console.error('Error obteniendo registro_glucosa:', registroError.message);
+          console.error('Error obtaining registro_glucosa:', registroError.message);
         }
 
         if (registroData) {
@@ -67,7 +67,7 @@ const auditoriaPaciente = async (req, res, next) => {
             .maybeSingle();
 
           if (pacienteError) {
-            console.error('Error obteniendo paciente:', pacienteError.message);
+            console.error('Error obtaining paciente:', pacienteError.message);
           }
 
           if (pacienteData) {
@@ -103,4 +103,4 @@ const auditoriaPaciente = async (req, res, next) => {
   next();
 };
 
-module.exports = auditoriaPaciente;
+export default auditoriaPaciente;

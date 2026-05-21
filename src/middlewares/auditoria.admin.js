@@ -1,4 +1,4 @@
-const supabase = require('../../database');
+import supabase from '../config/database.js';
 
 const auditoriaAdministrador = async (req, res, next) => {
   let called = false;
@@ -70,4 +70,4 @@ const auditoriaAdministrador = async (req, res, next) => {
   next();
 };
 
-module.exports = auditoriaAdministrador;
+export default auditoriaAdministrador;

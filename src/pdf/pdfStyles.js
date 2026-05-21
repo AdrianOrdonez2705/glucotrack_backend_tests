@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   // ===== ENCABEZADOS =====
   header: {
     fontSize: 28,

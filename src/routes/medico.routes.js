@@ -1,41 +1,28 @@
-const express = require('express');
+import express from 'express';
+import multer from 'multer';
+import MedicoController from '../controllers/medico.controller.js';
+import auditoriaMedico from '../middlewares/auditoria.medico.js';
+
 const router = express.Router();
-const multer = require('multer');
-
-const {
-  registrarMedico,
-  verMedicos,
-  medicosActivos,
-  medicosSolicitantes,
-  activarMedico,
-  perfilMedico,
-  verPacientes,
-  alertasActivas,
-  alertasResueltas,
-  retroalimentacionAlerta,
-  registrarGlucosaMedico,
-  actualizarMedico,
-} = require('../controllers/medico.controller');
-
-const auditoriaMedico = require('../middlewares/auditoria.medico');
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
 router.post(
   '/registrar',
   upload.fields([
     { name: 'matriculaProfesional', maxCount: 1 },
     { name: 'carnetProfesional', maxCount: 1 },
   ]),
-  registrarMedico,
+  MedicoController.registrarMedico,
 );
 
-router.post('/responder/alerta', auditoriaMedico, retroalimentacionAlerta);
-router.post('/registrar/glucosa', auditoriaMedico, registrarGlucosaMedico);
-router.get('/perfil/:idUsuario', auditoriaMedico, perfilMedico);
-router.get('/ver', verMedicos);
-router.get('/misPacientes/:idMedico', auditoriaMedico, verPacientes);
-router.get('/alertasActivas/:idMedico', auditoriaMedico, alertasActivas);
-router.get('/alertasResueltas/:idMedico', auditoriaMedico, alertasResueltas);
-router.put('/actualizar/:id_medico', auditoriaMedico, upload.single('carnet'), actualizarMedico);
+router.post('/responder/alerta', auditoriaMedico, MedicoController.retroalimentacionAlerta);
+router.post('/registrar/glucosa', auditoriaMedico, MedicoController.registrarGlucosaMedico);
+router.get('/perfil/:idUsuario', auditoriaMedico, MedicoController.perfilMedico);
+router.get('/ver', MedicoController.verMedicos);
+router.get('/misPacientes/:idMedico', auditoriaMedico, MedicoController.verPacientes);
+router.get('/alertasActivas/:idMedico', auditoriaMedico, MedicoController.alertasActivas);
+router.get('/alertasResueltas/:idMedico', auditoriaMedico, MedicoController.alertasResueltas);
+router.put('/actualizar/:id_medico', auditoriaMedico, upload.single('carnet'), MedicoController.actualizarMedico);
 
-module.exports = router;
+export default router;

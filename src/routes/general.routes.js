@@ -1,19 +1,13 @@
-const express = require('express');
+import express from 'express';
+import GeneralController from '../controllers/general.controller.js';
+
 const router = express.Router();
 
-const {
-  verMomentos,
-  verNiveles,
-  verEnfermedades,
-  verTratamientos,
-  verEspecialidades,
-  verAuditoria,
-} = require('../controllers/general.controller');
-router.get('/momentos', verMomentos);
-router.get('/niveles', verNiveles);
-router.get('/enfermedades', verEnfermedades);
-router.get('/tratamientos', verTratamientos);
-router.get('/especialidades', verEspecialidades);
-router.get('/auditoria', verAuditoria);
+router.get('/momentos', GeneralController.verMomentos);
+router.get('/niveles', GeneralController.verNiveles);
+router.get('/enfermedades', GeneralController.verEnfermedades);
+router.get('/tratamientos', GeneralController.verTratamientos);
+router.get('/especialidades', GeneralController.verEspecialidades);
+router.get('/auditoria', GeneralController.verAuditoria);
 
-module.exports = router;
+export default router;

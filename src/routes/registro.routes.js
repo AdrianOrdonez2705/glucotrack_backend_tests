@@ -1,8 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const { datosParaGlucosa, registrarAlerta } = require('../controllers/registro.controller');
-const auditoriaPaciente = require('../middlewares/auditoria.paciente');
-router.get('/datosGlucosa/:idUsuario', datosParaGlucosa);
+import express from 'express';
+import RegistroController from '../controllers/registro.controller.js';
+import auditoriaPaciente from '../middlewares/auditoria.paciente.js';
 
-router.post('/registrarAlerta', auditoriaPaciente, registrarAlerta);
-module.exports = router;
+const router = express.Router();
+
+router.get('/datosGlucosa/:idUsuario', RegistroController.datosParaGlucosa);
+router.post('/registrarAlerta', auditoriaPaciente, RegistroController.registrarAlerta);
+
+export default router;

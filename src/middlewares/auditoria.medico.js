@@ -1,4 +1,4 @@
-const supabase = require('../../database');
+import supabase from '../config/database.js';
 
 const auditoriaMedico = async (req, res, next) => {
   let called = false;
@@ -71,4 +71,4 @@ const auditoriaMedico = async (req, res, next) => {
   next();
 };
 
-module.exports = auditoriaMedico;
+export default auditoriaMedico;

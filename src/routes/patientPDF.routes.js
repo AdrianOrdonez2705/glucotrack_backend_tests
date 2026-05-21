@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import PdfService from '../pdf/makePatientPDF.js';
+
 const router = express.Router();
-const { generatePatientPDF } = require('../pdf/makePatientPDF');
 
 router.post('/paciente/pdf', async (req, res) => {
   try {
@@ -10,7 +11,7 @@ router.post('/paciente/pdf', async (req, res) => {
       return res.status(400).json({ error: 'Debes enviar el objeto paciente' });
     }
 
-    const pdfBuffer = await generatePatientPDF(paciente);
+    const pdfBuffer = await PdfService.generatePatientPDF(paciente);
 
     res.set({
       'Content-Type': 'application/pdf',
@@ -25,4 +26,4 @@ router.post('/paciente/pdf', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,4 +1,4 @@
-const getHipoTemplate = ({ nombrePaciente, valor, fecha, hora, nombreMedico, observaciones }) => ({
+export const getHipoTemplate = ({ nombrePaciente, valor, fecha, hora, nombreMedico, observaciones }) => ({
   subject: `Alerta de Hipoglucemia - ${nombrePaciente}`,
   html: `
     <p>Estimado/a Doctor/a ${nombreMedico},</p>
@@ -17,7 +17,7 @@ const getHipoTemplate = ({ nombrePaciente, valor, fecha, hora, nombreMedico, obs
   `,
 });
 
-const getHiperTemplate = ({ nombrePaciente, valor, fecha, hora, observaciones }) => ({
+export const getHiperTemplate = ({ nombrePaciente, valor, fecha, hora, observaciones }) => ({
   subject: `Alerta de Hiperglucemia - ${nombrePaciente}`,
   html: `
     <p>Estimado/a Doctor/a,</p>
@@ -37,7 +37,7 @@ const getHiperTemplate = ({ nombrePaciente, valor, fecha, hora, observaciones })
   `,
 });
 
-const getOtpTemplate = ({ nombreUsuario, codigo }) => ({
+export const getOtpTemplate = ({ nombreUsuario, codigo }) => ({
   subject: `Código de verificación para GlucoTracker`,
   html: `
     <p>Hola ${nombreUsuario},</p>
@@ -48,5 +48,3 @@ const getOtpTemplate = ({ nombreUsuario, codigo }) => ({
     <p>Atentamente,<br>GlucoTracker</p>
   `,
 });
-
-module.exports = { getHipoTemplate, getHiperTemplate, getOtpTemplate };

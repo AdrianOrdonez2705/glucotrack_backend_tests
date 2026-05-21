@@ -1,30 +1,24 @@
-const express = require('express');
+import express from 'express';
+import multer from 'multer';
+import PacienteController from '../controllers/paciente.controller.js';
+import auditoriaPaciente from '../middlewares/auditoria.paciente.js';
+
 const router = express.Router();
-const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-const {
-  perfilPaciente,
-  registrosPaciente,
-  registrarGlucosa,
-  registrarPaciente,
-  actualizarPaciente,
-  obtenerSemanasEmbarazoActual,
-} = require('../controllers/paciente.controller');
-const auditoriaPaciente = require('../middlewares/auditoria.paciente');
-router.get('/perfil/:idPaciente', auditoriaPaciente, perfilPaciente);
-router.get('/registros/:idPaciente', auditoriaPaciente, registrosPaciente);
+router.get('/perfil/:idPaciente', auditoriaPaciente, PacienteController.perfilPaciente);
+router.get('/registros/:idPaciente', auditoriaPaciente, PacienteController.registrosPaciente);
 
-router.post('/registrarGlucosa', auditoriaPaciente, registrarGlucosa);
+router.post('/registrarGlucosa', auditoriaPaciente, PacienteController.registrarGlucosa);
 router.post(
   '/registrarPaciente',
   upload.fields([{ name: 'foto_perfil', maxCount: 1 }]),
-  registrarPaciente,
+  PacienteController.registrarPaciente,
 );
 
-router.put('/actualizarPaciente/:id_usuario', auditoriaPaciente, actualizarPaciente);
+router.put('/actualizarPaciente/:id_usuario', auditoriaPaciente, PacienteController.actualizarPaciente);
 
-router.get('/obtenerDatosEmbarazo/:id_paciente', obtenerSemanasEmbarazoActual);
+router.get('/obtenerDatosEmbarazo/:id_paciente', PacienteController.obtenerSemanasEmbarazoActual);
 
-module.exports = router;
+export default router;
