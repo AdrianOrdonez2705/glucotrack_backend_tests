@@ -27,7 +27,7 @@ archivo.test.js
 Ejemplo:
 
 ```bash
-/tests/suma.test.js
+/tests/su_carpeta/suma.test.js
 ```
 
 ## Ejecutar pruebas
