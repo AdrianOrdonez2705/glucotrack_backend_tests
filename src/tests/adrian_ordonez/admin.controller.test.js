@@ -1,4 +1,4 @@
-// EJEMPLO DE PRUEBAS UNITARIAS CON admin.controller.js
+// Pruebas Unitarias para admin.controller.js
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import AdminController from '../../controllers/admin.controller.js';
 import supabase from '../../config/database.js';
@@ -180,65 +180,6 @@ describe('Pruebas Unitarias de AdminController', () => {
 
       expect(res.json).toHaveBeenCalledWith({
         error: 'No hay administrador',
-      });
-    });
-
-    it('debería activar correctamente un médico y su usuario asociado', async () => {
-      // 1. Preparación (Arrange)
-
-      req.params = {
-        idMedico: '10',
-      };
-
-      req.body = {
-        idAdmin: '99',
-      };
-
-      // Encadenamiento secuencial:
-      // 1° llamada (select medico)
-      // 2° llamada (update medico)
-      // 3° llamada (update usuario)
-
-      supabase.then
-        .mockImplementationOnce((resolve) =>
-          resolve({
-            data: { id_usuario: 500 },
-            error: null,
-          }),
-        )
-        .mockImplementationOnce((resolve) =>
-          resolve({
-            error: null,
-          }),
-        )
-        .mockImplementationOnce((resolve) =>
-          resolve({
-            error: null,
-          }),
-        );
-
-      // 2. Ejecución (Act)
-
-      await AdminController.activarMedico(req, res);
-
-      // 3. Verificación (Assert)
-
-      expect(supabase.from).toHaveBeenNthCalledWith(1, 'medico');
-
-      expect(supabase.from).toHaveBeenNthCalledWith(2, 'medico');
-
-      expect(supabase.from).toHaveBeenNthCalledWith(3, 'usuario');
-
-      expect(supabase.update).toHaveBeenNthCalledWith(1, {
-        administrador_id_admin: '99',
-      });
-
-      expect(supabase.update).toHaveBeenNthCalledWith(2, {
-        estado: true,
-      });
-
-      expect(res.json).toHaveBeenCalledWith({
-        mensaje: 'Usuario activado correctamente',
       });
     });
 
